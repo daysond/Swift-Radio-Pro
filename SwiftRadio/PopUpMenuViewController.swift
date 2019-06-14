@@ -7,48 +7,64 @@
 //
 
 import UIKit
+import RealmSwift
 
 class PopUpMenuViewController: UIViewController {
 
-    @IBOutlet weak var popupView: UIView!
-    @IBOutlet weak var backgroundView: UIImageView!
+    @IBOutlet weak var trackTableView: UITableView!
     
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        modalPresentationStyle = .custom
-    }
-    
+
+    var stations: [StationName] = []
+
     //*****************************************************************
     // MARK: - ViewDidLoad
     //*****************************************************************
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        loadData()
 
-        // Round corners
-        popupView.layer.cornerRadius = 10
-        
-        // Set background color to clear
-        view.backgroundColor = UIColor.clear
-        
-        // Add gesture recognizer to dismiss view when touched
-        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(closeButtonPressed))
-        backgroundView.isUserInteractionEnabled = true
-        backgroundView.addGestureRecognizer(gestureRecognizer)
     }
     
     //*****************************************************************
     // MARK: - IBActions
     //*****************************************************************
+    private func loadData() {
+        
+        let realm = try! Realm()
+        let realResults = Array(realm.objects(StationName.self))
+    
+        stations = realResults
+        trackTableView.reloadData()
+    }
 
-    @IBAction func closeButtonPressed() {
-        dismiss(animated: true, completion: nil)
+    
+}
+
+extension PopUpMenuViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return stations.count
     }
-   
-    @IBAction func websiteButtonPressed(_ sender: UIButton) {
-        // Use your own website URL here
-        guard let url = URL(string: "https://github.com/analogcode/") else { return }
-        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+//        tableView.headerView(forSection: section)?.textLabel?.textColor = .white
+        return stations[section].name
     }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return stations[section].favTracks.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = stations[indexPath.section].favTracks[indexPath.row].title
+//        cell.textLabel?.textColor = .white
+        cell.detailTextLabel?.text = stations[indexPath.section].favTracks[indexPath.row].title
+//        cell.detailTextLabel?.textColor = .white
+        return cell
+    }
+    
+    
     
 }

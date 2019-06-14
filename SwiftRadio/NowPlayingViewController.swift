@@ -9,6 +9,7 @@
 import UIKit
 import MediaPlayer
 import AVKit
+import RealmSwift
 
 
 //*****************************************************************
@@ -44,6 +45,8 @@ class NowPlayingViewController: UIViewController {
     @IBOutlet weak var airPlayView: UIView!
     
     // MARK: - Properties
+    
+    var label: UILabel!
     
     var currentStation: RadioStation!
     var currentTrack: Track!
@@ -141,11 +144,74 @@ class NowPlayingViewController: UIViewController {
         title = currentStation.name
     }
     
+    //set fav label
+    
+    func didFav() {
+        
+        let label = UILabel()
+        label.text = "❤️"
+        label.textColor = .white
+        label.translatesAutoresizingMaskIntoConstraints = false
+        self.label = label
+        self.view.addSubview(label)
+        NSLayoutConstraint.activate([label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                                     label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+                                     ])
+        
+        UIView.animate(withDuration: 0.75, animations: {
+            
+            self.label.transform = self.label.transform.scaledBy(x: 6.0, y: 6.0)
+            self.label.alpha = 0
+        
+        }) { (_) in
+            self.label.removeFromSuperview()
+        }
+        
+    }
+    
     //*****************************************************************
     // MARK: - Player Controls (Play/Pause/Volume)
     //*****************************************************************
     
     // Actions
+    @IBAction func doubleTapped(_ sender: UITapGestureRecognizer) {
+        
+        let realm = try! Realm()
+        //set track
+        let favTrack = FavTrack()
+        favTrack.artist = currentTrack.artist
+        favTrack.title = currentTrack.title
+        
+        //check if station already exists
+        
+        let stationName = StationName()
+        
+        if let stationName = realm.object(ofType: StationName.self, forPrimaryKey: currentStation.name) {
+
+            try! realm.write {
+                realm.add(favTrack)
+                stationName.favTracks.append(favTrack)
+            }
+
+        } else {
+
+            stationName.name = currentStation.name
+            stationName.stationID = currentStation.name
+            try! realm.write {
+                realm.add(favTrack)
+                realm.add(stationName)
+                stationName.favTracks.append(favTrack)
+            }
+
+        }
+        
+        if sender.state == .ended {
+            didFav()
+        }
+        
+        
+        print("tapped!!")
+    }
     
     @IBAction func playingPressed(_ sender: Any) {
         delegate?.didPressPlayingButton()
@@ -321,7 +387,7 @@ class NowPlayingViewController: UIViewController {
         
         // Create Top BarButton
         let barButton = UIButton(type: .custom)
-        barButton.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
+         barButton.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
         barButton.addSubview(nowPlayingImageView)
         nowPlayingImageView.center = barButton.center
         
